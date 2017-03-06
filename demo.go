@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"io"
 	"log"
 	"net"
 
@@ -62,6 +63,7 @@ func client(ip string) (e error) {
 	return
 }
 
-func handleMessages(conn net.Conn) {
-	defer conn.Close()
+func handleMessages(c net.Conn) {
+	io.Copy(c, c)
+	defer c.Close()
 }
