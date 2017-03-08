@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"encoding/gob"
 	"flag"
 	"io"
 	"log"
@@ -15,6 +16,11 @@ import (
 const (
 	port = ":61000"
 )
+
+type P struct {
+	X, Y, Z int
+	Name    string
+}
 
 func main() {
 	connect := flag.String("connect", "", "IP address of server. If empty, run in server mode")
@@ -64,6 +70,7 @@ func server() (e error) {
 
 func client(ip string) (e error) {
 
+	// first that string
 	addr := ip + port
 	log.Println("client:", addr)
 	conn, err := net.Dial("tcp", addr)
@@ -93,6 +100,25 @@ func client(ip string) (e error) {
 	}
 
 	log.Println("client: STRING request - got a response:", response)
+
+	// now for that gob
+	log.Println("client: send the gob request")
+	n, err = rw.WriteString("GOB\n")
+	if err != nil {
+		return errors.Wrap(err, "client: could not send the GOB request ("+strconv.Itoa(n)+" bytes written)")
+	}
+
+	enc := gob.NewEncoder(rw)
+	err = enc.Encode(P{3, 4, 5, "Pythagoras"})
+	if err != nil {
+		log.Fatal("client: encode error:", err)
+	}
+
+	log.Println("client: flush the buffer")
+	err = rw.Flush()
+	if err != nil {
+		return errors.Wrap(err, "client: flush failed")
+	}
 
 	return
 }
