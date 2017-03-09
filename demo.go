@@ -141,11 +141,24 @@ func handleMessages(c net.Conn) {
 
 		cmd = strings.Trim(cmd, "\n")
 		log.Println("server: received command '" + cmd + "'")
-		handleStrings(rw)
+
+		// TODO: it would be better to register a list of handlers here
+		switch cmd {
+		case "STRING":
+			handleStrings(rw)
+		case "GOB":
+			handleGob(rw)
+		default:
+			log.Printf("server: unknown command '%s' - close this connection\n", cmd)
+			return
+		}
+
 	}
 }
 
 func handleStrings(rw *bufio.ReadWriter) {
+	log.Println("server: receive STRING message")
+
 	s, err := rw.ReadString('\n')
 	if err != nil {
 		log.Println("server: cannot read from connection", err)
@@ -154,7 +167,7 @@ func handleStrings(rw *bufio.ReadWriter) {
 	s = strings.Trim(s, "\n")
 	log.Println("server:", s)
 
-	_, err = rw.WriteString("Thank you.\n")
+	_, err = rw.WriteString("Thank you for your STRING.\n")
 	if err != nil {
 		log.Println("server: cannot write to connection", err)
 	}
@@ -163,5 +176,20 @@ func handleStrings(rw *bufio.ReadWriter) {
 	if err != nil {
 		log.Println("server: cannot flush connection", err)
 	}
+
+}
+
+func handleGob(rw *bufio.ReadWriter) {
+	log.Println("server: receive GOB message")
+
+	var data P
+	dec := gob.NewDecoder(rw)
+	err := dec.Decode(&data)
+	if err != nil {
+		log.Println("server: error decoding GOB data", err)
+		return
+	}
+
+	log.Printf("server: GOB data received: %#v\n", data)
 
 }
