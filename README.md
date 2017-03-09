@@ -44,3 +44,32 @@ type Conn interface {
 ```
 
 The implementations of both the `Listener` and the `Conn` interfaces are platform specific.
+
+## Send and receive a struct via GOB
+
+Much of the code to send a GOB is the same as that to send a string. To send a string, we call the `WriteString()` method on the ReadWriter.
+
+```
+n, err = rw.WriteString("Additional data.\n")
+```
+
+To send a GOB the approach is very similar.
+
+```
+enc := gob.NewEncoder(rw)
+err = enc.Encode(P{3, 4, 5, "Pythagoras"})
+```
+
+The `NewEncoder(w io.Writer)` method takes an io.Writer and returns an instance of the `Encoder` struct. Calling `Encode(e interface{})` writes the encoded version of the interface out as a byte stream.
+
+The GOB encoder handles recursive types as in the example below.
+
+```
+type P struct {
+    X, Y, Z int
+    Name    string
+    P       *P
+}
+```
+
+## Send the same message using protobuf
