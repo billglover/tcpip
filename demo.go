@@ -20,6 +20,7 @@ const (
 type P struct {
 	X, Y, Z int
 	Name    string
+	P       *P
 }
 
 func main() {
@@ -109,7 +110,19 @@ func client(ip string) (e error) {
 	}
 
 	enc := gob.NewEncoder(rw)
-	err = enc.Encode(P{3, 4, 5, "Pythagoras"})
+	g := P{
+		X:    3,
+		Y:    4,
+		Z:    5,
+		Name: "Pythagoras",
+		P: &P{
+			X:    3,
+			Y:    4,
+			Z:    5,
+			Name: "Pythagoras",
+		},
+	}
+	err = enc.Encode(g)
 	if err != nil {
 		log.Fatal("client: encode error:", err)
 	}
@@ -190,6 +203,7 @@ func handleGob(rw *bufio.ReadWriter) {
 		return
 	}
 
-	log.Printf("server: GOB data received: %#v\n", data)
+	log.Printf("server: outer GOB data received: %#v\n", data)
+	log.Printf("server: inner GOB data received: %#v\n", data.P)
 
 }
