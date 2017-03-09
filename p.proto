@@ -1,0 +1,10 @@
+syntax = "proto3";
+package tcpip;
+
+message P {
+	int64 X = 1;
+	int64 Y = 2;
+	int64 Z = 3;
+	string Name = 4;
+	P P=5;
+}
