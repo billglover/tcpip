@@ -182,6 +182,8 @@ func handleMessages(c net.Conn) {
 			handleStrings(rw)
 		case "GOB":
 			handleGob(rw)
+		case "PROTOBUF":
+			handleStrings(rw)
 		default:
 			log.Printf("server: unknown command '%s' - close this connection\n", cmd)
 			return
