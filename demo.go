@@ -10,6 +10,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/billglover/tcpip/pb"
+	"github.com/golang/protobuf/proto"
+
 	"github.com/pkg/errors"
 )
 
@@ -131,6 +134,24 @@ func client(ip string) (e error) {
 	err = rw.Flush()
 	if err != nil {
 		return errors.Wrap(err, "client: flush failed")
+	}
+
+	// now for the protobuf
+	log.Println("client: send the protobuf request")
+	n, err = rw.WriteString("PROTOBUF\n")
+	if err != nil {
+		return errors.Wrap(err, "client: could not send the protobuf request ("+strconv.Itoa(n)+" bytes written)")
+	}
+
+	pbufP := &pb.P{}
+	out, err := proto.Marshal(pbufP)
+	if err != nil {
+		return errors.Wrap(err, "client: could not marshal protobuf")
+	}
+
+	n, err = rw.Write(out)
+	if err != nil {
+		return errors.Wrap(err, "client: could not send the protobuf value ("+strconv.Itoa(n)+" bytes written)")
 	}
 
 	return
