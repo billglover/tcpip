@@ -153,7 +153,11 @@ func client(ip string) (e error) {
 	if err != nil {
 		return errors.Wrap(err, "client: could not send the protobuf value ("+strconv.Itoa(n)+" bytes written)")
 	}
-
+	log.Println("client: flush the buffer")
+	err = rw.Flush()
+	if err != nil {
+		return errors.Wrap(err, "client: flush failed")
+	}
 	return
 }
 
