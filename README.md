@@ -123,3 +123,35 @@ It isn't obvious how the decoder knows it has reached the end of the byte stream
 
 ## Send the same message using protobuf
 
+Protobuf is a little different. Rather than use a struct to hold our data, we describe our data using the proto3 format and then generate the corresponding source code. This code allows us to create instances of our protobuf and to encode them for sending over the network.
+
+```
+pbufP := &pb.P{
+    X:    3,
+    Y:    4,
+    Z:    5,
+    Name: "Pythagoras",
+}
+
+// error handling removed for brevity
+out, _ := proto.Marshal(pbufP)
+n, _ = rw.Write(out)
+rw.Flush()
+```
+
+The `proto.Marshal()` function returns a byte slice which can then be written directly to the network. We flush the buffer as in our two previous examples and then we are done.
+
+Receiving a protobuf message is equally straightforward, but there was one catch that tripped me up. Again, error handling has been removed from the code below for brevity.
+
+```
+pbufP := pb.P{}
+d, _ := ioutil.ReadAll(rw)
+proto.Unmarshal(d, &pbufP)
+log.Println("server:", pbufP.String())
+```
+
+The thing that tripped me up was determining just how much data I should read from the reader. It turns out that the EOF marker is key here. When a protobuf is sent, it is terminated with the EOF marker. Using `iotil.ReadAll()` will read in all the data up to the EOF marker and hence our full protobuf.
+
+## What about gRPC
+
+Rather than hack this in to the existing code, I'm going to start a new client/server combination to implement this using gRPC.
