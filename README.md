@@ -92,13 +92,7 @@ Note though that we are providing a string terminator, in this case the new line
 
 ## Send and receive a struct via GOB
 
-Much of the code to send a GOB is the same as that to send a string. To send a string, we call the `WriteString()` method on the ReadWriter.
-
-```
-n, err = rw.WriteString("Additional data.\n")
-```
-
-To send a GOB the approach is very similar.
+To send a GOB the approach is very similar to that used to send a string.
 
 ```
 enc := gob.NewEncoder(rw)
@@ -117,4 +111,15 @@ type P struct {
 }
 ```
 
+Receiving a GOB is equally straight forward.
+
+```
+var data P
+dec := gob.NewDecoder(rw)
+err := dec.Decode(&data)
+```
+
+It isn't obvious how the decoder knows it has reached the end of the byte stream for a GOB, but looking at the `gob.Decoder` documentation it appears to be the EOF marker.
+
 ## Send the same message using protobuf
+
