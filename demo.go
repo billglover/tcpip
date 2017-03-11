@@ -5,6 +5,7 @@ import (
 	"encoding/gob"
 	"flag"
 	"io"
+	"io/ioutil"
 	"log"
 	"net"
 	"strconv"
@@ -143,7 +144,18 @@ func client(ip string) (e error) {
 		return errors.Wrap(err, "client: could not send the protobuf request ("+strconv.Itoa(n)+" bytes written)")
 	}
 
-	pbufP := &pb.P{}
+	pbufP := &pb.P{
+		X:    3,
+		Y:    4,
+		Z:    5,
+		Name: "Pythagoras",
+		P: &pb.P{
+			X:    3,
+			Y:    4,
+			Z:    5,
+			Name: "Pythagoras",
+		},
+	}
 	out, err := proto.Marshal(pbufP)
 	if err != nil {
 		return errors.Wrap(err, "client: could not marshal protobuf")
@@ -187,7 +199,7 @@ func handleMessages(c net.Conn) {
 		case "GOB":
 			handleGob(rw)
 		case "PROTOBUF":
-			handleStrings(rw)
+			handleProtobuf(rw)
 		default:
 			log.Printf("server: unknown command '%s' - close this connection\n", cmd)
 			return
@@ -233,4 +245,22 @@ func handleGob(rw *bufio.ReadWriter) {
 	log.Printf("server: outer GOB data received: %#v\n", data)
 	log.Printf("server: inner GOB data received: %#v\n", data.P)
 
+}
+
+func handleProtobuf(rw *bufio.ReadWriter) {
+	log.Println("server: receive protobuf message")
+
+	pbufP := pb.P{}
+	d, err := ioutil.ReadAll(rw)
+	if err != nil {
+		log.Println("server: unable to read protobuf data", err)
+		return
+	}
+
+	if err := proto.Unmarshal(d, &pbufP); err != nil {
+		log.Println("server: error decoding protobuf data", err)
+		return
+	}
+
+	log.Println("server:", pbufP.String())
 }
