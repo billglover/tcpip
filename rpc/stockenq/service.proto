@@ -1,0 +1,34 @@
+syntax = "proto3";
+package stockenq;
+
+// Stock Enquiry Service
+service StockEnquiry {
+	rpc GetStockPosition(StockRequest) returns (StockPosition) {}
+}
+
+message Product {
+	int32 productCode = 1;
+	string productName = 2;
+}
+
+message Store {
+	int32 storeID = 1;
+}
+
+message StockRequest {
+	Product product = 1;
+	Store store = 2;
+	int32 units = 3;
+}
+
+message StockPosition {
+	Product product = 1;
+	Store store = 2;
+	int32 units = 3;
+	int64 nextAvailable = 4;
+	enum Status {
+		IN_STOCK = 0;
+		OUT_OF_STOCK = 1;
+	}
+	Status status = 5;
+}
