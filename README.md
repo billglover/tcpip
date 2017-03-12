@@ -155,3 +155,90 @@ The thing that tripped me up was determining just how much data I should read fr
 ## What about gRPC
 
 Rather than hack this in to the existing code, I'm going to start a new client/server combination to implement this using gRPC.
+
+There are four types of service method with gRPC:
+
+ - simple RPC (server sends single response to client request)
+ - server-side streaming RPC (server streams a sequence of messages in response to client request)
+ - client-side streaming RPC (client streams events to the server and waits for a single response)
+ - bidirectional streaming RPC (both server and client independently stream messages to each other)
+
+In this proof of concept, I'm going to implement a simple Stock Enquiry Service and demonstrate the first two types of service method:
+
+```
+service StockEnquiry {
+    // obtains the stock position for a given product and store
+    rpc GetStockPosition(StockRequest) returns (StockPosition) {}
+
+    // lists nearby stores that have a given item in stock
+    rpc ListNearbyStock(StockRequest) returns (stream StockPosition) {}
+}
+```
+
+We extend our work with protobufs by defining our service and our messages in a proto file. We then generate our service and message definitions in Go.
+
+As with all our examples so far we begin by creating a TCP listener
+
+```golang
+l, err := net.Listen("tcp", ":10000")
+```
+
+We then create the gRPC server (no options for now) and then register our server for the Stock Enquiry service. At this point we are ready to start receiving inbound requests.
+
+```golang
+var opts []grpc.ServerOption
+grpcServer := grpc.NewServer(opts...
+
+pb.RegisterStockEnquiryServer(grpcServer, newStockEnquiryServer())
+grpcServer.Serve(lis)
+```
+
+If we dig a little deeper into the definition of `RegisterStockEnquiryServer()` we can see it takes two parameters. The first is a pointer to a `grpc.Server` but the second is a `StockEnquiryServer`.
+
+```golang
+func RegisterStockEnquiryServer(s *grpc.Server, srv StockEnquiryServer) {}
+```
+
+The `StockEnquiryServer` is an interface type which includes the following method set.
+
+```
+type StockEnquiryServer interface {
+    GetStockPosition(context.Context, *StockRequest) (*StockPosition, error)
+    ListNearbyStock(*StockRequest, StockEnquiry_ListNearbyStockServer) error
+}
+```
+
+This looks remarkably similar to the definition we outlined in our `.proto` file. Any type that implements both these methods can be registered as a `StockEnquiryServer`. This is a great way of de-coupling the generated code from code that is specific to our implementation.
+
+Now that we know we need to pass in an instance of the `StockEnquiryServer` we need to go ahead and create one. The `newStockEnquiryServer()` function does just that.
+
+```golang
+type stockEnquiryServer struct{}
+
+func newStockEnquiryServer() (s *stockEnquiryServer) {
+    s = new(stockEnquiryServer)
+    return
+}
+
+func (s *stockEnquiryServer) GetStockPosition(ctx context.Context, sr *pb.StockRequest) (sp *pb.StockPosition, e error) {
+//...
+}
+
+func (s *stockEnquiryServer) ListNearbyStock(sr *pb.StockRequest, stream pb.StockEnquiry_ListNearbyStockServer) (e error) {
+//...
+}
+```
+
+By implementing these methods, we are able to serve gRPC requests. And, to show how simple this can be, this is our `GetStockPosition()` method.
+
+```golang
+func (s *stockEnquiryServer) GetStockPosition(ctx context.Context, sr *pb.StockRequest) (sp *pb.StockPosition, e error) {
+    sp, e = lookupStockInDB(sr)
+    return
+}
+```
+
+## Notes:
+
+ - Protobuf RPC definitions only allow for single parameters. See [#976](https://github.com/google/protobuf/issues/976) on GitHub
+ - Understanding how the `Read()` method is implemented on a TCP connection quickly drops down into the `syscall` package.

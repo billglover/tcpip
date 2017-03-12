@@ -3,7 +3,11 @@ package stockenq;
 
 // Stock Enquiry Service
 service StockEnquiry {
+	// obtains the stock position for a given product and store
 	rpc GetStockPosition(StockRequest) returns (StockPosition) {}
+
+	// lists nearby stores that have a given item in stock
+	rpc ListNearbyStock(StockRequest) returns (stream StockPosition) {}
 }
 
 message Product {
